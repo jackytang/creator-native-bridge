@@ -1,78 +1,90 @@
-package com.cocos2dx.javascript;
 
+package com.cocos.javascript;
+
+import android.app.Activity;
 import android.util.Log;
 import android.widget.Toast;
 
-import org.cocos2dx.lib.Cocos2dxActivity;
-import org.cocos2dx.lib.Cocos2dxJavascriptJavaBridge;
+import com.cocos.lib.CocosHelper;
+import com.cocos.lib.CocosJavascriptJavaBridge;
+import com.cocos.lib.GlobalObject;
 
-public class Js{
+public class Js {
 
-    public static void call(String fname, Object ...args) {
-        if (fname == null || fname.isEmpty()) {
+    /**
+     * 调用 Cocos 回调函数
+     *
+     * @param fName 函数名称
+     * @param args 参数列表
+     */
+    public static void call(String fName, Object... args) {
+        if (fName == null || fName.isEmpty()) {
             return;
         }
 
-        String[] s = new String[args.length];
-
-        String str = "native.callback('" + fname + "', ";
+        StringBuilder str = new StringBuilder("native.callback('" + fName + "', ");
 
         for (Object o : args) {
             if (o instanceof String) {
-                str += "'" + o.toString() + "', ";
+                str.append("'").append(o).append("'");
             } else {
-                str += o.toString() + ", ";
+                str.append(o.toString());
             }
+
+            str.append(",");
         }
 
         eval(str + "undefined)");
     }
 
-    static private Cocos2dxActivity getCtx() {
-        return (Cocos2dxActivity) Cocos2dxActivity.getContext();
-    }
-
-    public static void callGlobal(String fname, Object ...args) {
-        if (fname == null || fname.isEmpty()) {
+    /**
+     * 调用 Cocos 全局函数, 不经过 Native.callback
+     *
+     * @param fName 函数名称
+     * @param args 参数列表
+     */
+    public static void callGlobal(String fName, Object... args) {
+        if (fName == null || fName.isEmpty()) {
             return;
         }
 
-        String[] s = new String[args.length];
-
-        String str = fname + "(";
+        StringBuilder str = new StringBuilder(fName + "(");
 
         for (Object o : args) {
             if (o instanceof String) {
-                str += "'" + o.toString() + "', ";
+                str.append("'").append(o).append("' ");
             } else {
-                str += o.toString() + ", ";
+                str.append(o.toString());
             }
+
+            str.append(", ");
         }
 
         eval(str + "undefined)");
     }
-
 
     public static void eval(final String str) {
-        getCtx().runOnGLThread(new Runnable() {
-            @Override
-            public void run() {
-                print(str);
-                Cocos2dxJavascriptJavaBridge.evalString(str);
-            }
-        });
+        CocosHelper.runOnGameThread(
+                () -> {
+                    print(str);
+                    CocosJavascriptJavaBridge.evalString(str);
+                });
     }
 
     public static void print(String s) {
         Log.e("@.@", s);
     }
 
+    private static Activity getCtx() {
+        return GlobalObject.getActivity();
+    }
+
     public static void tip(final String s) {
-        getCtx().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-            Toast.makeText(getCtx(), s, Toast.LENGTH_LONG).show();
-            }
-        });
+        GlobalObject.runOnUiThread(
+                () -> {
+                    print(s);
+                    Toast.makeText(getCtx(), s, Toast.LENGTH_LONG).show();
+                });
     }
 }
+
